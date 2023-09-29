@@ -6,21 +6,22 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 
-from . import helpers
+from . import helpers, workers
+from . import serializers
 
 # Create your views here.
 
 
 class Video(APIView):
     def post(self, request):
-        video_file = request.FILES.get("video_file")
-        helpers.save_video_file_to_disk(video_file)
+        serializer = serializers.Video(data=request.FILES)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get(self, request):
         video_file_name = request.query_params.get("video_file_name")
-        video_file = helpers.get_video_for_rendering(video_file_name)
-        if video_file:
-            # return render(request, "video.html", {"video_file": video_file})
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        video_file = workers.Video.get_video_file_by_file_name(video_file_name)
+        # TODO: render video in template
+        return Response(status=status.HTTP_200_OK)
